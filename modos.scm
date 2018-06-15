@@ -1,0 +1,165 @@
+(load "operaciones.scm")
+
+(define (mostrarJuego modo base matriz numeroDeMovimiento movimiento)
+
+	(clear)(newline)
+
+	(define posicionesDisponibles (length (obtenerPosicionesDisponibles matriz)))
+	(define numeroMayorObtenido (obtenerNumeroMayor matriz))
+	(define movimientosHabilitados #t)
+	(define movimientoElegido "")
+
+	(display "=====================================================================================")(newline)
+	(cond
+		((string=? modo MODO_JUGADOR)
+			(display "::: 2048 Game ( Modo Jugador ) ::::::::::::::::::::::::::::::::::::::::::::::::::::::")(newline)
+		)
+		((string=? modo MODO_MAQUINA)
+			(display "::: 2048 Game ( Modo Máquina ) ::::::::::::::::::::::::::::::::::::::::::::::::::::::")(newline)
+		)
+	)
+	(display "=====================================================================================")(newline)
+
+	(display "------------------------------ DIRECCIÓN DEL MOVIMIENTO -----------------------------")(newline)
+	(cond 
+		((string=? movimiento ARRIBA)
+			(display "                   Todos los elementos fueron movidos hacia Arriba                   ")(newline)
+		)
+		((string=? movimiento ABAJO)
+			(display "                   Todos los elementos fueron movidos hacia Abajo                    ")(newline)
+		)
+		((string=? movimiento IZQUIERDA)
+			(display "                Todos los elementos fueron movidos hacia la Izquierda                ")(newline)
+		)
+		((string=? movimiento DERECHA)
+			(display "                Todos los elementos fueron movidos hacia la Derecha                  ")(newline)
+		)
+		(else
+			(display "                     Aún no se ha realizado ningún movimiento                        ")(newline)
+		)
+	)
+	(display "-------------------------------------------------------------------------------------")(newline)
+	(display (string "                               PUNTOS ACUMULADOS: " puntosAcumulados "       "))(newline)
+	(display "-------------------------------------------------------------------------------------")(newline)
+
+	(newline)
+
+	(display (string "Casillas Disponibles: " posicionesDisponibles "    "))
+	(display (string "Número Mayor Obtenido: " numeroMayorObtenido "    "))
+	(display (string "Movimientos Realizados: " numeroDeMovimiento "\n\n"))
+
+	(desplegarMatriz matriz)
+
+	(define (menuModoJugador)
+
+		(display "Elija una opción: ")
+		(define opcion (read-line))
+
+		(cond
+			((and (string? opcion) (string-ci=? opcion ARRIBA) movimientosHabilitados)
+				(aplicarMovimiento matriz ARRIBA)
+				(generarNuevoValor base matriz)
+				(mostrarJuego MODO_JUGADOR base matriz (+ numeroDeMovimiento 1) ARRIBA)
+			)
+			((and (string? opcion) (string-ci=? opcion ABAJO) movimientosHabilitados)
+				(aplicarMovimiento matriz ABAJO)
+				(generarNuevoValor base matriz)
+				(mostrarJuego MODO_JUGADOR base matriz (+ numeroDeMovimiento 1) ABAJO)
+			)
+			((and (string? opcion) (string-ci=? opcion IZQUIERDA) movimientosHabilitados)
+				(aplicarMovimiento matriz IZQUIERDA)
+				(generarNuevoValor base matriz)
+				(mostrarJuego MODO_JUGADOR base matriz (+ numeroDeMovimiento 1) IZQUIERDA)
+			)
+			((and (string? opcion) (string-ci=? opcion DERECHA) movimientosHabilitados)
+				(aplicarMovimiento matriz DERECHA)
+				(generarNuevoValor base matriz)
+				(mostrarJuego MODO_JUGADOR base matriz (+ numeroDeMovimiento 1) DERECHA)
+			)
+			((and (string? opcion) (string-ci=? opcion NUEVO_JUEGO))
+				(load "2048.scm")
+			)
+			(else
+				(display OPCION_INVALIDA)
+				(menuModoJugador)
+			)
+		)
+
+	)
+
+	(define (menuModoMaquina)
+
+		(display "Elija una opción: ")
+		(define opcion (read-line))
+
+		(cond
+			((and (string=? opcion "") movimientosHabilitados)
+				(set! movimientoElegido (calcularMovimiento matriz))
+				(aplicarMovimiento matriz movimientoElegido)
+				(generarNuevoValor base matriz)
+				(mostrarJuego MODO_MAQUINA base matriz (+ numeroDeMovimiento 1) movimientoElegido)
+			)
+			((and (string? opcion) (string-ci=? opcion NUEVO_JUEGO))
+				(load "2048.scm")
+			)
+			(else
+				(display OPCION_INVALIDA)
+				(menuModoMaquina)
+			)
+		)
+
+	)
+
+	(if (string=? modo MODO_JUGADOR)
+		(cond
+			((= numeroMayorObtenido (* base 1024))
+				(set! movimientosHabilitados #f)
+				(mostrarMensajeJuegoGanado base)
+				(menuModoJugador)
+			)
+			((or (> posicionesDisponibles 0) (esPosibleContinuar matriz))
+				(display "\n(w) Arriba     (s) Abajo     (a) Izquierda     (d) Derecha     (m) Ir al Menú Principal ( Se terminará la partida )\n\n")
+				(menuModoJugador)
+			)
+			(else
+				(set! movimientosHabilitados #f)
+				(mostrarMensajeGameOver)
+				(menuModoJugador)
+			)
+		)
+		(cond
+			((= numeroMayorObtenido (* base 1024))
+				(set! movimientosHabilitados #f)
+				(mostrarMensajeJuegoGanado base)
+				(menuModoMaquina)
+			)
+			((or (> posicionesDisponibles 0) (esPosibleContinuar matriz))
+				(display "\n(ENTER) Siguiente Movimiento      (m) Ir al Menú Principal ( Se terminará la partida )\n\n")
+				(menuModoMaquina)
+			)
+			(else
+				(set! movimientosHabilitados #f)
+				(mostrarMensajeGameOver)
+				(menuModoMaquina)
+			)
+		)
+	)
+
+	(newline)
+	(newline)
+
+)
+
+(define (mostrarMensajeJuegoGanado base)
+	(display "\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")(newline)
+	(display (string ":::::::::::::::   ¡ FELICIDADES ! HAS OBTENIDO EL NÚMERO " (* base 1024) "   :::::::::::::::::::::"))(newline)
+	(display ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")(newline)
+	(display "\n(m) Iniciar Nuevo Juego\n\n")
+)
+
+(define (mostrarMensajeGameOver)
+	(display "\n:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")(newline)
+	(display "::::::::::::::::::::::::::::::::    GAME OVER    ::::::::::::::::::::::::::::::::::::")(newline)
+	(display ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")(newline)
+	(display "\n(m) Iniciar Nuevo Juego\n\n")
+)
